@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{.VenueDetails.Name}} - Select activity</title>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <h1>{{.VenueDetails.Name}} - Select activity</h1>
+    {{range .Activities}}
+      <b>{{.Name}}</b>
+      <ul>
+        {{range .Children}}
+        <li>
+          <a href="{{.Slug}}/">{{.Name}}</a>
+        </li>
+        {{end}}
+      </ul>
+    {{end}}
+  </body>
+</html>

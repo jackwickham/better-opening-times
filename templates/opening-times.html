@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Opening Times - {{.Venue.Name}}</title>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <h1>Opening Times</h1>
+    {{.Venue.Name}}
+    <ul>
+      {{range .Dates}}
+        <li>
+          <b>{{.Date}}:</b>
+          {{range $index, $time := .Times}}
+            {{if $index}}
+              and
+            {{end}}
+            {{$time.Start}} to {{$time.End}}
+          {{else}}
+            No times found
+          {{end}}
+        </li>
+      {{end}}
+    </ul>
+  </body>
+</html>
