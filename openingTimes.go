@@ -1,12 +1,14 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"regexp"
+	"slices"
 	"strconv"
 	"time"
 
@@ -92,6 +94,9 @@ func loadOpeningTimes(client *http.Client, date dateInfo, request GetOpeningTime
 		return nil, errors.New("Unepected times format")
 	}
 
+	slices.SortFunc(times, func(a, b openingTime) int {
+		return cmp.Compare(a.StartTimestamp, b.StartTimestamp)
+	})
 	rangeSet := NewRangeSet()
 	for _, slot := range times {
 		matches := durationRegex.FindStringSubmatch(slot.Duration)
@@ -125,8 +130,9 @@ type outputDateInfo struct {
 }
 
 type openingTimesOutput struct {
-	Dates []outputDateInfo
-	Venue *VenueDetails
+	Dates    []outputDateInfo
+	Venue    *VenueDetails
+	Activity Activity
 }
 
 func OpeningTimesHandler(request GetOpeningTimesRequest, w http.ResponseWriter, r *http.Request) {
@@ -135,12 +141,18 @@ func OpeningTimesHandler(request GetOpeningTimesRequest, w http.ResponseWriter, 
 	venueChan := make(chan *VenueDetails, 1)
 	go LoadVenueDetailsToChan(client, request.venue, venueChan)
 
+	activityChan := make(chan MaybeActivity, 1)
+	go LoadActivityDetailsToChan(client, request.venue, request.activity, activityChan)
+
 	dates, err := loadDates(client, request)
 	if err != nil {
 		http.Error(w, "Failed to load available dates", http.StatusInternalServerError)
 		return
 	}
 
+	if len(dates.Data) > 21 {
+		dates.Data = dates.Data[:21]
+	}
 	results := make([]outputDateInfo, len(dates.Data))
 
 	eg := new(errgroup.Group)
@@ -180,9 +192,16 @@ func OpeningTimesHandler(request GetOpeningTimesRequest, w http.ResponseWriter, 
 		return
 	}
 
+	activityDetails := <-activityChan
+	if activityDetails.err != nil {
+		http.Error(w, "Failed to load activity details", http.StatusInternalServerError)
+		return
+	}
+
 	outputData := openingTimesOutput{
-		Dates: results,
-		Venue: venueDetails,
+		Dates:    results,
+		Venue:    venueDetails,
+		Activity: activityDetails.activity,
 	}
 
 	err = Templates.ExecuteTemplate(w, "opening-times.html", outputData)

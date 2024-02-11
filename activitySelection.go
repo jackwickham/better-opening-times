@@ -14,20 +14,9 @@ type activitySummary struct {
 	Slug string
 }
 
-type activity struct {
-	Name     string
-	Slug     string
-	Children []activitySummary
-}
-
-type maybeActivity struct {
-	activity activity
-	err      error
-}
-
 type activityOuputData struct {
 	VenueDetails *VenueDetails
-	Activities   []activity
+	Activities   []Activity
 }
 
 func ActivitySelectionHandler(center string, w http.ResponseWriter, r *http.Request) {
@@ -53,38 +42,12 @@ func ActivitySelectionHandler(center string, w http.ResponseWriter, r *http.Requ
 	}
 
 	activityQueue := make(chan activitySummary, len(categories.Data))
-	activityResults := make(chan maybeActivity, len(categories.Data))
+	activityResults := make(chan MaybeActivity, len(categories.Data))
 
 	for i := 0; i < 4; i++ {
-		go func(client *http.Client, venueSlug string, queue <-chan activitySummary, results chan<- maybeActivity) {
+		go func(client *http.Client, venueSlug string, queue <-chan activitySummary, results chan<- MaybeActivity) {
 			for activityCategory := range queue {
-				resp, err := client.Get(fmt.Sprintf("https://better-admin.org.uk/api/activities/venue/%s/categories/%s", venueSlug, activityCategory.Slug))
-				if err != nil {
-					log.Println("Failed to load activity: ", err)
-					results <- maybeActivity{err: err}
-				}
-				defer resp.Body.Close()
-
-				var response struct{ Data activity }
-				err = json.NewDecoder(resp.Body).Decode(&response)
-				if err != nil {
-					log.Println("Failed to parse activity: ", err)
-					results <- maybeActivity{err: err}
-				}
-
-				a := response.Data
-				if len(response.Data.Children) == 0 {
-					// If no actual children, pretend it's a child of itself
-					a = activity{
-						Name: activityCategory.Name,
-						Slug: activityCategory.Slug,
-						Children: []activitySummary{{
-							Name: activityCategory.Name,
-							Slug: activityCategory.Slug,
-						}},
-					}
-				}
-				results <- maybeActivity{activity: a}
+				LoadActivityDetailsToChan(client, venueSlug, activityCategory.Slug, results)
 			}
 		}(client, center, activityQueue, activityResults)
 	}
@@ -94,7 +57,7 @@ func ActivitySelectionHandler(center string, w http.ResponseWriter, r *http.Requ
 	}
 	close(activityQueue)
 
-	results := make([]activity, len(categories.Data))
+	results := make([]Activity, len(categories.Data))
 	for i := 0; i < len(categories.Data); i++ {
 		res := <-activityResults
 		if res.err != nil {
@@ -103,7 +66,7 @@ func ActivitySelectionHandler(center string, w http.ResponseWriter, r *http.Requ
 		}
 		results[i] = res.activity
 	}
-	slices.SortFunc(results, func(a activity, b activity) int {
+	slices.SortFunc(results, func(a Activity, b Activity) int {
 		return cmp.Compare(a.Name, b.Name)
 	})
 
