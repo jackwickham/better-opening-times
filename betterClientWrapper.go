@@ -11,6 +11,7 @@ func (o *originInjectingRoundTripper) RoundTrip(req *http.Request) (*http.Respon
 	if req.URL.Hostname() == "better-admin.org.uk" {
 		req.Header.Add("Origin", "https://bookings.better.org.uk")
 	}
+	req.Header.Add("User-Agent", "better-opening-times (+https://www.jackw.net/better-opening-times)")
 	return o.delegate.RoundTrip(req)
 }
 
