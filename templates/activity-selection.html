@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>{{.VenueDetails.Name}} - Select activity</title>
+    <title>Select activity - {{.VenueDetails.Name}}</title>
     <meta charset="utf-8" />
+    <link rel="stylesheet" href="../assets/main.css">
   </head>
   <body>
-    <h1>{{.VenueDetails.Name}} - Select activity</h1>
+    <h1>Select activity</h1>
+    <nav>
+      <a href="../">Home</a> / <b>{{.VenueDetails.Name}}</b>
+    </nav>
     {{range .Activities}}
       <b>{{.Name}}</b>
       <ul>

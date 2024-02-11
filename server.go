@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var Templates = template.Must(template.ParseGlob("templates/*.html"))
@@ -32,8 +33,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	mux := http.NewServeMux()
 	basePath := "/better-opening-times/"
+	assetsPath := basePath + "assets/"
 
-	mux.Handle(basePath, http.StripPrefix(basePath, http.HandlerFunc(handler)))
+	mux.Handle(assetsPath, WrapCache(12*time.Hour, http.StripPrefix(assetsPath, http.FileServer(http.Dir("assets")))))
+	mux.Handle(basePath, WrapCache(1*time.Hour, http.StripPrefix(basePath, http.HandlerFunc(handler))))
 
 	log.Fatal(http.ListenAndServe(":8072", mux))
 }

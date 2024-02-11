@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Opening Times - {{.Venue.Name}}</title>
+    <title>Opening times - {{.Activity.Name}} - {{.Venue.Name}}</title>
     <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../assets/main.css">
   </head>
   <body>
-    <h1>Opening Times</h1>
-    {{.Activity.Name}} - {{.Venue.Name}}
+    <h1>Opening times</h1>
+    <nav>
+      <a href="../../">Home</a> / <a href="../">{{.Venue.Name}}</a> / <b>{{.Activity.Name}}</b>
+    </nav>
     <ul>
       {{range .Dates}}
         <li>
