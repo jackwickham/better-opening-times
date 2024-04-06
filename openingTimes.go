@@ -155,6 +155,8 @@ func OpeningTimesHandler(request GetOpeningTimesRequest, w http.ResponseWriter, 
 	}
 	results := make([]outputDateInfo, len(dates.Data))
 
+	location, _ := time.LoadLocation("Europe/London")
+
 	eg := new(errgroup.Group)
 	for ti, tdate := range dates.Data {
 		i, date := ti, tdate
@@ -167,8 +169,8 @@ func OpeningTimesHandler(request GetOpeningTimesRequest, w http.ResponseWriter, 
 			times := make([]outputTimeInfo, len(timeRanges.Ranges))
 			for j, timeRange := range timeRanges.Ranges {
 				times[j] = outputTimeInfo{
-					Start: time.Unix(timeRange.StartTimestamp, 0).Format("15:04"),
-					End:   time.Unix(timeRange.EndTimestamp, 0).Format("15:04"),
+					Start: time.Unix(timeRange.StartTimestamp, 0).In(location).Format("15:04"),
+					End:   time.Unix(timeRange.EndTimestamp, 0).In(location).Format("15:04"),
 				}
 			}
 
